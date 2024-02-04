@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>IRR Calculator</title>
+</head>
+<body>
+    <h1>IRR Calculator</h1>
+    <label for="period">选择现金流期限:</label>
+    <select id="period">
+        <option value="12">月</option>
+        <option value="4">季度</option>
+        <option value="1">年</option>
+    </select>
+    <br>
+    <label for="numPeriods">输入期数:</label>
+    <input type="number" id="numPeriods" name="numPeriods" min="1">
+    <button onclick="generateTable()">生成</button>
+    <br>
+    <table id="cashFlowTable"></table>
+    <button onclick="calculateIRR()">计算IRR</button>
+    <p id="result"></p>
+    <script>
+        // 生成表格的函数
+        function generateTable() {
+            var numPeriods = document.getElementById("numPeriods").value;
+            var table = document.getElementById("cashFlowTable");
+            table.innerHTML = "";
+            for (var i = 0; i <= numPeriods; i++) {
+                var row = table.insertRow();
+                var cell1 = row.insertCell();
+                var cell2 = row.insertCell();
+                var cell3 = row.insertCell();
+                cell1.innerHTML = "期数 " + i;
+                cell2.innerHTML = "<input type='number' id='cashFlow" + i + "'" + (i === 1 ? " oninput='copyFirstPeriodValue()'" : "") + ">";
+                if (i === 1) {
+                    cell3.innerHTML = "<input type='checkbox' id='copyFirstPeriod' onchange='copyFirstPeriodValue()'> 与第一期相同";
+                }
+            }
+        }
+
+        // 当第一期的复选框被勾选时，复制第一期的值到其他期数
+        function copyFirstPeriodValue() {
+            var isChecked = document.getElementById('copyFirstPeriod').checked;
+            var firstPeriodValue = document.getElementById('cashFlow1').value;
+            var numPeriods = document.getElementById("numPeriods").value;
+            if (isChecked) {
+                for (var i = 2; i <= numPeriods; i++) {
+                    document.getElementById('cashFlow' + i).value = firstPeriodValue;
+                }
+            }
+        }
+        // 计算IRR的函数
+        function calculateIRR() {
+            var numPeriods = document.getElementById("numPeriods").value;
+            var period = document.getElementById("period").value;
+            var cashFlows = [];
+            for (var i = 0; i <= numPeriods; i++) {
+                cashFlows.push(parseFloat(document.getElementById("cashFlow" + i).value) || 0);
+            }
+            var irr = IRR(cashFlows, 0.1);
+            var annualizedIRR = Math.pow(1 + irr, period) - 1;
+            document.getElementById("result").innerHTML = "IRR: " + (irr * 100).toFixed(2) + "%, 年化IRR: " + (annualizedIRR * 100).toFixed(2) + "%";
+        }
+
+        // 使用牛顿-拉夫森方法计算IRR
+        function IRR(cashFlows, guess) {
+            var maxEpsilon = 0.0000001;
+            var iterationLimit = 100;
+            var resultRate = guess;
+            for (var i = 0; i < iterationLimit; i++) {
+                var resultValue = cashFlowPV(resultRate, cashFlows);
+                var newRate = resultRate - resultValue / cashFlowDerivative(resultRate, cashFlows);
+                if (Math.abs(newRate - resultRate) <= maxEpsilon) {
+                    resultRate = newRate;
+                    break;
+                }
+                resultRate = newRate;
+            }
+            return resultRate;
+        }
+
+        // 计算现金流的净现值
+        function cashFlowPV(rate, cashFlows) {
+            var r = rate + 1;
+            var result = 0;
+            for (var i = 0; i < cashFlows.length; i++) {
+                result += cashFlows[i] / Math.pow(r, i);
+            }
+            return result;
+        }
+
+        // 计算现金流净现值的导数
+        function cashFlowDerivative(rate, cashFlows) {
+            var r = rate + 1;
+            var result = 0;
+            for (var i = 0; i < cashFlows.length; i++) {
+                result -= i * cashFlows[i] / Math.pow(r, i + 1);
+            }
+            return result;
+        }
+    </script>
+</body>
+</html>
