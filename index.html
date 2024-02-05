@@ -129,3 +129,109 @@
     </div>
 </body>
 </html>
+
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>还款计划表测算</title>
+    <style>
+        body {
+            text-align: center;
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            max-width: 640px;
+            margin: 0 auto;
+        }
+        table {
+            margin: 0 auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>还款计划表测算</h1>
+        <label for="cashFlowPeriod">选择现金流期限:</label>
+        <select id="cashFlowPeriod">
+            <option value="12">月</option>
+            <option value="4">季度</option>
+            <option value="1">年</option>
+        </select>
+        <br>
+        <label for="principal">输入本金 (元):</label>
+        <input type="number" id="principal" name="principal" min="1">
+        <br>
+        <label for="repaymentPeriods">输入还款期数:</label>
+        <input type="number" id="repaymentPeriods" name="repaymentPeriods" min="1">
+        <br>
+        <label for="irrInput">输入IRR (%):</label>
+        <input type="number" id="irrInput" name="irrInput" step="0.01">
+        <br>
+        <label for="repaymentType">选择还款方式:</label>
+        <select id="repaymentType">
+            <option value="equalPrincipalInterest">等额本息</option>
+            <option value="equalPrincipal">等额本金</option>
+        </select>
+        <br>
+        <button onclick="generateRepaymentSchedule()">生成还款计划表</button>
+        <br>
+        <table id="repaymentScheduleTable"></table>
+
+        <script>
+            // 计算等额本息每期还款额
+            function calculateEqualPrincipalInterest(principal, annualRate, totalPeriods) {
+                var monthlyRate = annualRate / 12 / 100;
+                return (principal * monthlyRate * Math.pow(1 + monthlyRate, totalPeriods)) / (Math.pow(1 + monthlyRate, totalPeriods) - 1);
+            }
+
+            // 计算等额本金每期还款额
+            function calculateEqualPrincipal(principal, annualRate, totalPeriods) {
+                var monthlyRate = annualRate / 12 / 100;
+                var principalPerPeriod = principal / totalPeriods;
+                var repayments = [];
+
+                for (var i = 0; i < totalPeriods; i++) {
+                    var interestForPeriod = (principal - principalPerPeriod * i) * monthlyRate;
+                    var totalRepaymentForPeriod = principalPerPeriod + interestForPeriod;
+                    repayments.push(totalRepaymentForPeriod);
+                }
+
+                return repayments;
+            }
+
+            // 生成还款计划表
+            function generateRepaymentSchedule() {
+                var principal = parseFloat(document.getElementById("principal").value);
+                var periods = parseInt(document.getElementById("repaymentPeriods").value);
+                var irr = parseFloat(document.getElementById("irrInput").value);
+                var repaymentType = document.getElementById("repaymentType").value;
+                var repaymentScheduleTable = document.getElementById("repaymentScheduleTable");
+                repaymentScheduleTable.innerHTML = ""; // 清空表格
+
+                if (repaymentType === 'equalPrincipalInterest') {
+                    var paymentPerPeriod = calculateEqualPrincipalInterest(principal, irr, periods);
+                    for (var i = 1; i <= periods; i++) {
+                        var row = repaymentScheduleTable.insertRow();
+                        var cell1 = row.insertCell();
+                        var cell2 = row.insertCell();
+                        cell1.innerHTML = "第 " + i + " 期";
+                        cell2.innerHTML = paymentPerPeriod.toFixed(2) + " 元";
+                    }
+                } else if (repaymentType === 'equalPrincipal') {
+                    var repayments = calculateEqualPrincipal(principal, irr, periods);
+                    for (var i = 1; i <= periods; i++) {
+                        var row = repaymentScheduleTable.insertRow();
+                        var cell1 = row.insertCell();
+                        var cell2 = row.insertCell();
+                        cell1.innerHTML = "第 " + i + " 期";
+                        cell2.innerHTML = repayments[i - 1].toFixed(2) + " 元";
+                    }
+                }
+            }
+        </script>
+    </div>
+</body>
+</html>
